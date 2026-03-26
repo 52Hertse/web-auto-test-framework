@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+<input id="searchInput" placeholder="商品"><br>
+<button id="searchBtn">搜索</button>
+<div id="searchResult"></div>
+<a href="cart.html" id="goCart">去购物车</a>
+<script>
+document.getElementById('searchBtn').onclick=function(){
+    let v=document.getElementById('searchInput').value;
+    document.getElementById('searchResult').innerText='搜索结果：'+v;
+}
+</script>
+</body>
+</html>
