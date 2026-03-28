@@ -1,5 +1,5 @@
 # 企业级 Web 自动化测试框架
-基于 Selenium + Pytest + Allure + PO 模式实现的 Web 自动化实战项目，包含完整业务流程（登录、搜索、购物车、结算），可直接用于学习与公司项目落地。
+基于 Selenium + Pytest + Allure + PO 模式实现的 Web 自动化实战项目，包含完整业务流程（登录、搜索、购物车、结算），可用于学习企业级自动化框架。
 
 ## 技术栈
 - Python 3.10+
@@ -49,7 +49,6 @@ allure serve report/allure-results
 适用场景
 自动化测试学习
 企业 Web 项目自动化落地
-简历项目经验
 运行环境
 Python 3.10+
 Selenium 4
