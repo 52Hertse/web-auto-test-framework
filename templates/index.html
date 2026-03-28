@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>商品管理</title>
+<style>
+  body{max-width:1000px;margin:40px auto}
+  .form{border:1px solid #ddd;padding:20px;margin-bottom:20px;border-radius:8px}
+  .form input{padding:8px;margin:5px;width:200px}
+  .goods-item{padding:12px;border-bottom:1px solid #eee}
+  button{padding:8px 14px;cursor:pointer}
+</style>
+<h1>
+    欢迎，<span id="userName">请登录</span>
+    <input id="keyword" class="search-box" placeholder="搜索商品名称">
+    <button class="search-btn" onclick="searchGoods()" style="
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    background: linear-gradient(135deg, #409eff, #66b1ff);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
+">
+    搜索
+</button>
+  <button class="reset-btn" onclick="resetSearch()" style="
+    border: 1px solid #dcdfe6;
+    border-radius: 8px;
+    padding: 8px 16px;
+    background-color: #fff;
+    color: #606266;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+">
+    重置
+</button>
+    <button onclick="logout()" style="background:#f30;
+  color:white;padding:8px 16px;border:none;border-radius:6px;cursor:pointer;float:right">
+      退出登录
+  </button>
+</h1>
+
+<!-- 表单区域：添加/修改共用 -->
+<div class="form" id="formBox" style="display:none;">
+  <h3 id="formTitle">添加商品</h3>
+  <input type="hidden" id="goodsId">
+  <input id="goodsName" placeholder="商品名称"><br>
+  <input id="goodsPrice" placeholder="价格" type="number"><br>
+  <input id="goodsStock" placeholder="库存" type="number" value="100"><br>
+  <button id="saveGoods" onclick="saveGoods()">确认保存</button>
+  <button id="clearForm" onclick="clearForm()">清空</button>
+</div>
+<h3>商品列表</h3>
+<div id="goodsList"></div>
+<a href="search.html" id="goSearch">去搜索</a><br>
+<a href="cart.html" id="goCart">去购物车</a>
+
+<script>
+    // 动态显示用户名
+    let username = localStorage.username || "请登录";
+    document.getElementById("userName").innerText = username;
+    // 是否是管理员
+    let isAdmin = localStorage.role === 'admin'
+    let allGoods = [];//保存全部商品，用于搜索
+    if(isAdmin){
+        document.getElementById('formBox').style.display = 'block'
+    }
+    //页面加载先拿到所有商品
+    loadAllGoods();
+    async function loadAllGoods(){
+        let res = await fetch('http://127.0.0.1:5000/api/index/goods')
+        let json = await res.json()
+        allGoods = json.data
+        loadGoods(allGoods)//初始渲染全部商品
+    }
+    // 加载商品列表
+    function loadGoods(list) {
+        let html = ''
+        list.forEach(g => {
+            html += `
+            <div class="goods-item">
+              ${g.id} ${g.name} ￥${g.price} 库存:${g.stock}
+              <button id="addToCart" onclick="addCart(${g.id})">加入购物车</button>
+              ${isAdmin ? `
+              <button id="toEdit" onclick="toEdit(${g.id},'${g.name}',${g.price},${g.stock})">修改</button>
+              <button id="delGoods" onclick="delGoods(${g.id})">删除</button>
+              ` : ''}
+            </div>`
+        })
+        document.getElementById('goodsList').innerHTML = html
+    }
+    // ======================
+    // 🔥 首页搜索
+    // ======================
+    async function searchGoods() {
+      let keyword = document.getElementById("keyword").value.trim().toLowerCase();
+      let filtered = allGoods.filter(g =>
+        g.name.toLowerCase().includes(keyword)
+      );
+      loadGoods(filtered);
+    }
+    // 进入修改（回填表单）
+    function toEdit(id,name,price,stock){
+      document.getElementById('formTitle').innerText = '修改商品'
+      document.getElementById('goodsId').value = id
+      document.getElementById('goodsName').value = name
+      document.getElementById('goodsPrice').value = price
+      document.getElementById('goodsStock').value = stock
+    }
+
+    // 清空表单（回到添加状态）
+    function clearForm(){
+      document.getElementById('formTitle').innerText = '添加商品'
+      document.getElementById('goodsId').value = ''
+      document.getElementById('goodsName').value = ''
+      document.getElementById('goodsPrice').value = ''
+      document.getElementById('goodsStock').value = '100'
+    }
+
+    // 保存：添加/修改 自动判断
+    async function saveGoods(){
+      let id = document.getElementById('goodsId').value
+      let name = document.getElementById('goodsName').value.trim()
+      let price = document.getElementById('goodsPrice').value.trim()
+      let stock = document.getElementById('goodsStock').value.trim()
+      let userId = localStorage.userId
+
+      if(!name){
+        alert('请输入商品名称')
+        return
+      }
+
+      let url, data
+      if(id){
+        // 修改（动态SQL，只传有值的）
+        url = 'http://127.0.0.1:5000/api/goods/update'
+        data = {id,user_id:userId}
+        if(name) data.name = name
+        if(price) data.price = price
+        if(stock) data.stock = stock
+      }else{
+        // 添加
+        url = 'http://127.0.0.1:5000/api/goods/add'
+        data = {name, price, stock, user_id:userId}
+      }
+
+      let res = await fetch(url,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(data)
+      })
+      let json = await res.json()
+      alert(json.msg)
+      clearForm()
+      loadGoods()
+    }
+
+    // 删除
+    async function delGoods(id){
+      if(!confirm('确定删除？')) return
+      let res = await fetch('http://127.0.0.1:5000/api/goods/delete',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+        id,
+        user_id:localStorage.userId
+        })
+      })
+      let json = await res.json()
+      alert(json.msg)
+      loadGoods()
+    }
+
+    async function addCart(goodsId) {
+            let userId = localStorage.getItem("userId");
+
+            if (!userId) {
+                alert("请先登录！");
+                location.href = "login.html";
+                return;
+            }
+
+            try {
+                let resp = await fetch("http://127.0.0.1:5000/api/cart/add", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        user_id: parseInt(userId),
+                        goods_id: goodsId  // ✅ 直接用传进来的商品ID
+                    })
+                })
+
+                let json = await resp.json()
+                if (json.code === 0) {
+                    alert("加入购物车成功！")
+                    // location.href = "cart.html"
+                } else {
+                    alert("失败：" + json.msg)
+                }
+            } catch (e) {
+                console.error(e)
+                alert("加入失败，请检查后端")
+            }
+
+    }
+    //重置
+    function resetSearch() {
+        // 清空搜索框
+        document.getElementById('keyword').value = '';
+        loadAllGoods();
+    }
+    // 退出登录
+    function logout() {
+        if (confirm("确定要退出登录吗？")) {
+            // 清空本地登录信息
+            localStorage.removeItem("userId");
+            localStorage.removeItem("role");
+            location.href = "login.html";
+        }
+    }
+</script>

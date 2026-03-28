@@ -4,7 +4,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # 多环境切换
 ENV = "test"  # test / pre / prod
 ENV_MAP = {
-    "test": "file:///" + os.path.join(BASE_DIR, "login.html"),
+    # 本地环境
+    # "test":"file:///" + os.path.join(BASE_DIR, "login.html")
+    "test": "http://127.0.0.1:5000/login.html",
     "pre": "https://pre.xxx.com",
     "prod": "https://xxx.com"
 }

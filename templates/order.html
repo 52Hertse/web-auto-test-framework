@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>我的订单</title>
+<style>body{max-width:800px;margin:30px auto}</style>
+
+<h1>我的订单</h1>
+<div id="orderList"></div>
+
+<script>
+    async function loadOrders() {
+        let userId = localStorage.getItem("userId")
+        let res = await fetch("http://127.0.0.1:5000/api/order/list", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId })
+        })
+        let json = await res.json()
+
+        let html = ""
+        json.data.forEach(o => {
+            html += `<div>订单 ${o.id} | 金额：${o.total_price}元 | ${o.create_time}</div><hr>`
+        })
+        document.getElementById("orderList").innerHTML = html
+    }
+    loadOrders()
+</script>

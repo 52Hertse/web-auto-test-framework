@@ -37,3 +37,8 @@ class BasePage:
         self.driver.save_screenshot(path)
         allure.attach.file(path, name=name, attachment_type=allure.attachment_type.PNG)
         return path
+    def get_text(self, loc):
+        ele = self.wait_click(loc)
+        text = ele.text
+        log.info(f"✅ 获取元素文本：{text}")
+        return text

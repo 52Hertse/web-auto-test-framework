@@ -2,11 +2,12 @@ from selenium.webdriver.common.by import By
 from common.base_page import BasePage
 
 class IndexPage(BasePage):
+    # 元素定位
     user_text = (By.ID, "user")
-    to_search = (By.ID, "goSearch")
+    go_search = (By.ID, "goSearch")
 
-    def get_user(self):
+    def get_user_name(self):
         return self.get_text(self.user_text)
 
-    def go_search_page(self):
-        self.click(self.to_search)
+    def to_search(self):
+        self.click(self.go_search)

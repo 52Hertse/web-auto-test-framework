@@ -1,0 +1,8 @@
+# 搜索业务 数据驱动用例
+search:
+  - keyword: "笔记本电脑"
+    expect: "存在商品"
+  - keyword: "手机"
+    expect: "存在商品"
+  - keyword: "测试不存在"
+    expect: "无数据"

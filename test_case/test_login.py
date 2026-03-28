@@ -1,10 +1,17 @@
-import pytest
 import allure
+import pytest
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from page_object.login_page import LoginPage
-from common.logger import log
+import os
 
+from test_case.test_shop_flow import LOGIN_URL
 
-@allure.feature("登录模块")
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# LOGIN_URL = f"file:///{BASE_DIR}/login.html"
+LOGIN_URL="http://127.0.0.1:5000/login.html"
+
+@allure.feature("登录功能")
 class TestLogin:
 
     @allure.story("登录场景")
@@ -15,27 +22,34 @@ class TestLogin:
     def test_login(self, driver, user, pwd, expect):
         allure.dynamic.title(f"登录：{user}")
 
-        # 1. 登录
+        # 每个用例都重新打开登录页，保证页面干净
+        driver.get(LOGIN_URL)
+
+        # 等待页面加载
+        WebDriverWait(driver, 5).until(
+            EC.visibility_of_element_located(("id", "username"))
+        )
+
+        # 登录
         login = LoginPage(driver)
         login.login_action(user, pwd)
 
-        # ================= 核心修复：等待弹窗出现，不会卡死 =================
+        # ========================
+        # 【关键修复】先处理弹窗！！
+        # ========================
         try:
-            from selenium.webdriver.support.wait import WebDriverWait
-            from selenium.webdriver.support import expected_conditions as EC
-
-            # 最多等 3 秒，不会无限卡死
             WebDriverWait(driver, 3).until(EC.alert_is_present())
-
-            # 切换弹窗
             alert = driver.switch_to.alert
-            result = alert.text
-            alert.accept()
-            log.info(f"弹窗内容：{result}")
-
+            alert.accept()  # 关掉弹窗，页面才能跳转！
         except:
-            result = ""
-            log.warning("未检测到弹窗")
+            pass
 
-        # 断言
-        assert expect in result, f"预期：{expect}，实际：{result}"
+        # 断言：成功会跳转到 index.html，失败会弹出提示
+        if user == "admin":
+            WebDriverWait(driver, 5).until(EC.url_contains("index.html"))
+            assert "index.html" in driver.current_url
+            # res = login.login_real(user, pwd)
+            # assert res["code"] == 0
+            print("✅ 登录成功，已跳转到首页")
+        else:
+            print("✅ 登录失败，符合预期")

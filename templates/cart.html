@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<meta charset="UTF-8">
+<title>我的购物车</title>
+<style>
+    body {
+        max-width: 800px;
+        margin: 30px auto;
+        font-size: 16px;
+    }
+    .cart-item {
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .num-box {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .num-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+        cursor: pointer;
+        border: 1px solid #ddd;
+        background: #fff;
+        border-radius: 4px;
+    }
+    #checkout {
+        margin-top: 20px;
+        padding: 12px 25px;
+        background: #ff4400;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+    #cartList {
+        margin: 20px 0;
+        min-height: 100px;
+    }
+</style>
+
+<h1>我的购物车</h1>
+<div id="cartList">
+    <!-- 接口返回空数组时，会显示这段 -->
+    <div style="color:#999; padding:20px; text-align:center;">
+        购物车暂无商品，去 <a href="index.html" style="color:#007bff;">首页</a> 看看吧～
+    </div>
+</div>
+<button id="checkout" onclick="checkout()"
+        style="margin-top: 10px;
+               padding: 5px 7px;
+               background: orange;
+               color: white;
+               border: none;
+               border-radius: 6px;
+               font-size: 16px;
+               cursor: pointer;">
+    结算
+</button>
+<script>
+    // 页面加载时获取购物车
+    window.onload = function () {
+        loadCart();
+    };
+
+    async function loadCart() {
+        // ======================
+        // ✅ 第一步：先拿 userId
+        // ======================
+        let userId = localStorage.getItem("userId");
+        console.log("当前用户ID：", userId);
+
+        // 如果没登录，强制跳登录
+        if (!userId) {
+            document.getElementById("cartList").innerHTML = "请先登录！";
+            setTimeout(() => location.href = "login.html", 1500);
+            return;
+        }
+
+        // ======================
+        // ✅ 第二步：请求后端接口
+        // ======================
+        try {
+            let res = await fetch("http://127.0.0.1:5000/api/cart/list", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ user_id: userId })
+            });
+
+            let json = await res.json();
+            console.log("购物车返回数据：", json);
+
+            // ======================
+            // ✅ 第三步：渲染页面
+            // ======================
+            let html = "";
+            if (json.data && json.data.length > 0) {
+                json.data.forEach(item => {
+                    // ✅ 这里用 .name .price .num
+                    html += `
+                    <div class="cart-item">
+                        <div>${item.name} | ${item.price}元</div>
+                        <div class="num-box">
+                            <button class="num-btn" onclick="changeNum(${item.goods_id}, -1)">-</button>
+                            <span>${item.num}</span>
+                            <button class="num-btn" onclick="changeNum(${item.goods_id}, 1)">+</button>
+                        </div>
+                    </div>
+                    `
+                })
+            } else {
+                html = "<div style='color:#999'>购物车暂无商品</div>";
+            }
+
+            document.getElementById("cartList").innerHTML = html;
+
+        } catch (err) {
+            console.error("请求错误：", err);
+            document.getElementById("cartList").innerHTML = "加载失败，请检查后端服务";
+        }
+    }
+    // ==========================
+    // ✅ 数量增减（核心功能）
+    // ==========================
+    async function changeNum(goodsId, change) {
+        let userId = localStorage.getItem("userId");
+        if (!userId) return alert("请登录");
+
+        let res = await fetch("http://127.0.0.1:5000/api/cart/update_num", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                user_id: userId,
+                goods_id: goodsId,
+                change: change
+            })
+        });
+
+        let json = await res.json();
+        console.log("数量更新返回数据：", json);
+        if (json.code === 0) {
+            loadCart(); // 刷新购物车
+        } else {
+            alert(json.msg);
+        }
+    }
+
+    // ==========================
+    // ✅ 结算功能
+    // ==========================
+    async function checkout() {
+        let userId = localStorage.getItem("userId")
+        if (!userId) return alert("请登录")
+
+        let res = await fetch("http://127.0.0.1:5000/api/order/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId })
+        })
+        let json = await res.json()
+
+        if (json.code === 0) {
+            alert("结算成功！订单号：" + json.order_id)
+            location.href = "order.html"
+        } else {
+            alert("结算失败：" + json.msg)
+        }
+    }
+</script>
